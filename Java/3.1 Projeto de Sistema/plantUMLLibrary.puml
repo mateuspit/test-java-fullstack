@@ -1,0 +1,119 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+' ===== Entidades de domínio =====
+class Livro {
+  +id: Long
+  +titulo: String
+  +isbn: String
+  +anoPublicacao: int
+  +categoria: String
+  +isDisponivel(): boolean
+}
+
+class Autor {
+  +id: Long
+  +nome: String
+  +bio: String
+}
+
+class Exemplar {
+  +id: Long
+  +codigoBarras: String
+  +situacao: SituacaoExemplar
+}
+
+enum SituacaoExemplar {
+  DISPONIVEL
+  EMPRESTADO
+  RESERVADO
+  DANIFICADO
+}
+
+class Leitor {
+  +id: Long
+  +nome: String
+  +email: String
+  +matricula: String
+  +limiteEmprestimos: int
+  +multaPendente: BigDecimal
+  +getEmprestimosAtivos(): List<Emprestimo>
+}
+
+class Emprestimo {
+  +id: Long
+  +dataEmprestimo: LocalDate
+  +dataPrevistaDevolucao: LocalDate
+  +dataDevolucao: LocalDate
+  +multaCalculada: BigDecimal
+  +status: StatusEmprestimo
+  +renovar(RegraEmprestimo): void
+  +calcularMulta(RegraEmprestimo): BigDecimal
+}
+
+enum StatusEmprestimo {
+  ATIVO
+  ATRASADO
+  ENCERRADO
+}
+
+class Reserva {
+  +id: Long
+  +dataReserva: LocalDate
+  +status: StatusReserva
+}
+
+enum StatusReserva {
+  ATIVA
+  CANCELADA
+  ATENDIDA
+  EXPIRADA
+}
+
+' ===== Regras de negócio configuráveis =====
+interface RegraEmprestimo {
+  +prazoPara(leitor: Leitor): int
+  +multaPorDiaAtraso(): BigDecimal
+}
+
+class RegraEmprestimoPadrao
+
+' ===== Serviços (camada de aplicação) =====
+class BibliotecaService {
+  +cadastrarLivro(livro: Livro): Livro
+  +cadastrarAutor(autor: Autor): Autor
+  +cadastrarLeitor(leitor: Leitor): Leitor
+  +emprestar(leitorId: Long, exemplarId: Long): Emprestimo
+  +devolver(emprestimoId: Long): Emprestimo
+  +renovar(emprestimoId: Long): Emprestimo
+  +reservar(leitorId: Long, livroId: Long): Reserva
+}
+
+' ===== Repositórios (persistência) =====
+interface LivroRepository
+interface AutorRepository
+interface ExemplarRepository
+interface LeitorRepository
+interface EmprestimoRepository
+interface ReservaRepository
+
+' ===== Relações =====
+Livro "1" -- "*" Exemplar
+Livro "*" -- "*" Autor
+Leitor "1" -- "*" Emprestimo
+Leitor "1" -- "*" Reserva
+Emprestimo "*" -- "1" Exemplar
+Reserva "*" -- "1" Livro
+
+Emprestimo ..> RegraEmprestimo
+RegraEmprestimoPadrao ..|> RegraEmprestimo
+
+BibliotecaService ..> LivroRepository
+BibliotecaService ..> AutorRepository
+BibliotecaService ..> ExemplarRepository
+BibliotecaService ..> LeitorRepository
+BibliotecaService ..> EmprestimoRepository
+BibliotecaService ..> ReservaRepository
+BibliotecaService ..> RegraEmprestimo
+
+@enduml
